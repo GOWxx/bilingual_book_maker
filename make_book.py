@@ -177,21 +177,32 @@ class BEPUB:
                 print(item)
                 pbar.update(index)
                 # stop if index reached TEST_NUM in the test mode
+                print(IS_TEST, index, TEST_NUM, 'IS_TEST, index, TEST_NUM, result:',
+                      IS_TEST and index >= TEST_NUM)
                 if IS_TEST and index >= TEST_NUM:
                     break
+                print(item, item.get_type(), 'item, item.get_type()')
                 if item.get_type() == 9:
                     soup = bs(item.content, "html.parser")
+                    print(soup, 'soup')
                     p_list = soup.findAll("p")
                     p_batches = self.create_batches(p_list, BATCH_SIZE)
+                    print(p_batches, 'p_batches')
+                    print(self.resume, 'self.resume')
+                    print(index, 'index')
+                    # print(len(p_batch), 'len(p_batch)')
+                    # print(p_to_save_len, 'p_to_save_len')
                     for p_batch in p_batches:
                         if self.resume and index + len(p_batch) < p_to_save_len:
                             # read cached p_list from cache file
                             p_results = self.p_to_save[index: index +
                                                        len(p_batch)]
                         else:
+                            print(p_batch, 'p_batch')
                             # p_results is a list of modified p in order
                             p_results = asyncio.run(
-                                self.batch_process(p_batch))
+                                self.batch_process(p_batch)
+                            )
                             # save p_results to cache file
                             # TODO check p_results
                             self.p_to_save.extend(p_results)
@@ -236,7 +247,9 @@ class BEPUB:
         if not p.text or self._is_special_text(p.text):
             return p
         new_p = copy(p)
+        print(new_p, 'new_p')
         new_p.string = await self.translate_model.translate_async(p.text)
+        print(new_p.string, 'new_p.string')
         # append translated text after the original text
         p.insert_after(new_p)
         return p
