@@ -70,7 +70,7 @@ class GPT3(Base):
         self.language = language
 
     def translate(self, text):
-        print(text, 'test, here')
+        # # print(text, 'test, here')
         self.headers["Authorization"] = f"Bearer {self.get_key(self.api_key)}"
         self.data["prompt"] = f"Please help me to translate，`{text}` to {self.language}"
         r = self.session.post(
@@ -78,7 +78,7 @@ class GPT3(Base):
         if not r.ok:
             return text
         t_text = r.json().get("choices")[0].get("text", "").strip()
-        print(t_text)
+        # print(t_text)
         return t_text
 
 
@@ -99,12 +99,14 @@ class ChatGPT(Base):
             openai.api_base = api_base
 
     async def translate_async(self, text):
-        print(text)
+        # print(text, 'here', NO_LIMIT)
         retry = 5
         t_text = None
         while retry > 0 and not t_text:
             openai.api_key = await self.get_key_async(self.key)
+            # print(openai.api_key)
             try:
+                print('run here')
                 completion = await openai.ChatCompletion.acreate(
                     model="gpt-3.5-turbo",
                     messages=[
@@ -115,6 +117,7 @@ class ChatGPT(Base):
                         }
                     ],
                 )
+                print('no here no here')
                 t_text = (
                     completion["choices"][0]
                     .get("message")
@@ -127,10 +130,10 @@ class ChatGPT(Base):
                     await asyncio.sleep(3)
             except Exception as e:
                 sleep_time = 2 ** (5 - retry)
-                print(str(e), "will sleep", sleep_time, "seconds")
+                # print(str(e), "will sleep", sleep_time, "seconds")
                 await asyncio.sleep(sleep_time)
                 retry -= 1
-        print(t_text)
+        # print(t_text, 'destination')
         return t_text
 
 
@@ -139,7 +142,7 @@ class BEPUB:
         self.epub_name = epub_name
         self.new_epub = epub.EpubBook()
         self.translate_model = model(key, language, model_api_base)
-        print(self.translate_model, 'test, here')
+        # print(self.translate_model, 'test, here')
         self.origin_book = epub.read_epub(self.epub_name)
         self.p_to_save = []
         self.resume = resume
@@ -175,31 +178,31 @@ class BEPUB:
         p_to_save_len = len(self.p_to_save)
         try:
             for item in self.origin_book.get_items():
-                print(item)
+                # print(item)
                 pbar.update(index)
                 # stop if index reached TEST_NUM in the test mode
-                print(IS_TEST, index, TEST_NUM, 'IS_TEST, index, TEST_NUM, result:',
-                      IS_TEST and index >= TEST_NUM)
+                # print(IS_TEST, index, TEST_NUM, 'IS_TEST, index, TEST_NUM, result:',
+                #   IS_TEST and index >= TEST_NUM)
                 if IS_TEST and index >= TEST_NUM:
                     break
-                print(item, item.get_type(), 'item, item.get_type()')
+                # print(item, item.get_type(), 'item, item.get_type()')
                 if item.get_type() == 9:
                     soup = bs(item.content, "html.parser")
-                    print(soup, 'soup')
+                    # print(soup, 'soup')
                     p_list = soup.findAll("p")
                     p_batches = self.create_batches(p_list, BATCH_SIZE)
-                    print(p_batches, 'p_batches')
-                    print(self.resume, 'self.resume')
-                    print(index, 'index')
-                    # print(len(p_batch), 'len(p_batch)')
-                    # print(p_to_save_len, 'p_to_save_len')
+                    # print(p_batches, 'p_batches')
+                    # print(self.resume, 'self.resume')
+                    # print(index, 'index')
+                    # # print(len(p_batch), 'len(p_batch)')
+                    # # print(p_to_save_len, 'p_to_save_len')
                     for p_batch in p_batches:
                         if self.resume and index + len(p_batch) < p_to_save_len:
                             # read cached p_list from cache file
                             p_results = self.p_to_save[index: index +
                                                        len(p_batch)]
                         else:
-                            print(p_batch, 'p_batch')
+                            # print(p_batch, 'p_batch')
                             # p_results is a list of modified p in order
                             p_results = asyncio.run(
                                 self.batch_process(p_batch)
@@ -208,8 +211,8 @@ class BEPUB:
                             # TODO check p_results
                             self.p_to_save.extend(p_results)
                         index += len(p_batch)  # update index for pbar
-                        print(
-                            f"processed {len(p_results)} paragraphs in batch")
+                        # print(
+                        # f"processed {len(p_results)} paragraphs in batch")
                     item.content = soup.prettify().encode()
 
                 new_book.add_item(item)
@@ -217,8 +220,8 @@ class BEPUB:
             epub.write_epub(f"{name}_bilingual.epub", new_book, {})
             pbar.close()
         except (KeyboardInterrupt, Exception) as e:
-            print(e)
-            print("you can resume it next time")
+            # print(e)
+            # print("you can resume it next time")
             self.save_progress()
             exit(0)
 
@@ -248,9 +251,9 @@ class BEPUB:
         if not p.text or self._is_special_text(p.text):
             return p
         new_p = copy(p)
-        print(new_p, 'new_p')
+        # print(new_p, 'new_p')
         new_p.string = await self.translate_model.translate_async(p.text)
-        print(new_p.string, 'new_p.string')
+        # print(new_p.string, 'new_p.string')
         # append translated text after the original text
         p.insert_after(new_p)
         return p
@@ -357,7 +360,7 @@ if __name__ == "__main__":
         raise Exception("Need openai API key, please google how to")
     if not options.book_name.endswith(".epub"):
         raise Exception("please use epub file")
-    print(options.model, 'options.model')
+    # print(options.model, 'options.model')
 
     model = MODEL_DICT.get(options.model, "chatgpt")
     language = options.language

@@ -23,7 +23,7 @@ class Google(Base):
         pass
 
     def translate(self, text):
-        print(text)
+        # print(text)
         r = self.session.post(
             self.api_url,
             headers=self.headers,
@@ -34,5 +34,5 @@ class Google(Base):
         t_text = "".join(
             [sentence.get("trans", "") for sentence in r.json()["sentences"]]
         )
-        print(t_text)
+        # print(t_text)
         return t_text

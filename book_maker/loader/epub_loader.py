@@ -121,8 +121,8 @@ class EPUBBookLoader(BaseBookLoader):
             epub.write_epub(f"{name}_bilingual.epub", new_book, {})
             pbar.close()
         except (KeyboardInterrupt, Exception) as e:
-            print(e)
-            print("you can resume it next time")
+            # print(e)
+            # print("you can resume it next time")
             self._save_progress()
             self._save_temp_book()
             sys.exit(0)
@@ -153,7 +153,7 @@ class EPUBBookLoader(BaseBookLoader):
                         if index < p_to_save_len:
                             new_p = copy(p)
                             new_p.string = self.p_to_save[index]
-                            print(new_p.string)
+                            # print(new_p.string)
                             p.insert_after(new_p)
                             index += 1
                         else:
@@ -165,7 +165,7 @@ class EPUBBookLoader(BaseBookLoader):
             epub.write_epub(f"{name}_bilingual_temp.epub", new_temp_book, {})
         except Exception as e:
             # TODO handle it
-            print(e)
+            # print(e)
 
     def _save_progress(self):
         try:

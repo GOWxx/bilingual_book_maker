@@ -70,8 +70,8 @@ class TXTBookLoader(BaseBookLoader):
             )
 
         except (KeyboardInterrupt, Exception) as e:
-            print(e)
-            print("you can resume it next time")
+            # print(e)
+            # print("you can resume it next time")
             self._save_progress()
             self._save_temp_book()
             sys.exit(0)

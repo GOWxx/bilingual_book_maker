@@ -37,7 +37,7 @@ class ChatGPTAPI(Base):
 
     def translate(self, text):
         # todo: Determine whether to print according to the cli option
-        print(text)
+        # print(text)
 
         try:
             t_text = self.get_translation(text)
@@ -47,11 +47,11 @@ class ChatGPTAPI(Base):
             # 2. an apikey has no money or reach limit, don’t sleep, just replace it with another apikey
             # 3. all apikey reach limit, then use current sleep
             sleep_time = int(60 / self.key_len)
-            print(e, f"will sleep {sleep_time} seconds")
+            # print(e, f"will sleep {sleep_time} seconds")
             time.sleep(sleep_time)
 
             t_text = self.get_translation(text)
 
         # todo: Determine whether to print according to the cli option
-        print(t_text)
+        # print(t_text)
         return t_text
