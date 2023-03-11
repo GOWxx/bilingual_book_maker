@@ -70,10 +70,11 @@ class GPT3(Base):
         self.language = language
 
     def translate(self, text):
-        print(text)
+        print(text, 'test, here')
         self.headers["Authorization"] = f"Bearer {self.get_key(self.api_key)}"
         self.data["prompt"] = f"Please help me to translate，`{text}` to {self.language}"
-        r = self.session.post(self.api_url, headers=self.headers, json=self.data)
+        r = self.session.post(
+            self.api_url, headers=self.headers, json=self.data)
         if not r.ok:
             return text
         t_text = r.json().get("choices")[0].get("text", "").strip()
@@ -161,7 +162,8 @@ class BEPUB:
         all_p_length = 0
         for item in all_items:
             if item.file_name.endswith(".xhtml"):
-                all_p_length += len(bs(item.content, "html.parser").findAll("p"))
+                all_p_length += len(bs(item.content,
+                                    "html.parser").findAll("p"))
             else:
                 all_p_length += len(bs(item.content, "xml").findAll("p"))
         if IS_TEST:
@@ -172,6 +174,7 @@ class BEPUB:
         p_to_save_len = len(self.p_to_save)
         try:
             for item in self.origin_book.get_items():
+                print(item)
                 pbar.update(index)
                 # stop if index reached TEST_NUM in the test mode
                 if IS_TEST and index >= TEST_NUM:
@@ -183,15 +186,18 @@ class BEPUB:
                     for p_batch in p_batches:
                         if self.resume and index + len(p_batch) < p_to_save_len:
                             # read cached p_list from cache file
-                            p_results = self.p_to_save[index : index + len(p_batch)]
+                            p_results = self.p_to_save[index: index +
+                                                       len(p_batch)]
                         else:
                             # p_results is a list of modified p in order
-                            p_results = asyncio.run(self.batch_process(p_batch))
+                            p_results = asyncio.run(
+                                self.batch_process(p_batch))
                             # save p_results to cache file
                             # TODO check p_results
                             self.p_to_save.extend(p_results)
                         index += len(p_batch)  # update index for pbar
-                        print(f"processed {len(p_results)} paragraphs in batch")
+                        print(
+                            f"processed {len(p_results)} paragraphs in batch")
                     item.content = soup.prettify().encode()
 
                 new_book.add_item(item)
@@ -219,7 +225,7 @@ class BEPUB:
             raise Exception("can not save resume file")
 
     def create_batches(self, p_list, batch_size):
-        return [p_list[i : i + batch_size] for i in range(0, len(p_list), batch_size)]
+        return [p_list[i: i + batch_size] for i in range(0, len(p_list), batch_size)]
 
     async def batch_process(self, p_batch):
         tasks = [self.process(p) for p in p_batch]
