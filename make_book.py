@@ -139,6 +139,7 @@ class BEPUB:
         self.epub_name = epub_name
         self.new_epub = epub.EpubBook()
         self.translate_model = model(key, language, model_api_base)
+        print(self.translate_model, 'test, here')
         self.origin_book = epub.read_epub(self.epub_name)
         self.p_to_save = []
         self.resume = resume
@@ -356,6 +357,8 @@ if __name__ == "__main__":
         raise Exception("Need openai API key, please google how to")
     if not options.book_name.endswith(".epub"):
         raise Exception("please use epub file")
+    print(options.model, 'options.model')
+
     model = MODEL_DICT.get(options.model, "chatgpt")
     language = options.language
     if options.language in LANGUAGES:
