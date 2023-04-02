@@ -1,7 +1,3 @@
-This forked added Google Translate support, only supported translate to `zh-CN`.
-Usage: make sure to add `--model google` in the command.
-
-
 **[中文](./README-CN.md) | English**
 
 # bilingual_book_maker
@@ -19,26 +15,44 @@ The bilingual_book_maker is an AI translation tool that uses ChatGPT to assist u
 
 ## Use
 
-1. `pip install -r requirements.txt`
-2. Use `--openai_key` option to specify OpenAI API key. If you have multiple keys, separate them by commas (xxx,xxx,xxx) to reduce errors caused by API call limits.  
-   Or, just set environment variable `OPENAI_API_KEY` to ignore this option.
-3. A sample book, `test_books/animal_farm.epub`, is provided for testing purposes.
-4. The default underlying model is [GPT-3.5-turbo](https://openai.com/blog/introducing-chatgpt-and-whisper-apis), which is used by ChatGPT currently. Use `--model gpt3` to change the underlying model to `GPT3`
-5. Use `--test` option to preview the result if you haven't paid for the service. Note that there is a limit and it may take some time.
-6. Set the target language like `--language "Simplified Chinese"`. Default target language is `"Simplified Chinese"`.  
+- `pip install -r requirements.txt` or `pip install -U bbook_maker`(you can use)
+- Use `--openai_key` option to specify OpenAI API key. If you have multiple keys, separate them by commas (xxx,xxx,xxx) to reduce errors caused by API call limits.
+   Or, just set environment variable `BMM_OPENAI_API_KEY` instead.
+- A sample book, `test_books/animal_farm.epub`, is provided for testing purposes.
+- The default underlying model is [GPT-3.5-turbo](https://openai.com/blog/introducing-chatgpt-and-whisper-apis), which is used by ChatGPT currently. Use `--model gpt3` to change the underlying model to `GPT3`
+5. support DeepL model [DeepL Translator](https://rapidapi.com/splintPRO/api/deepl-translator) need pay to get the token use `--model deepl --deepl_key ${deepl_key}`
+- Use `--test` option to preview the result if you haven't paid for the service. Note that there is a limit and it may take some time.
+- Set the target language like `--language "Simplified Chinese"`. Default target language is `"Simplified Chinese"`.
    Read available languages by helper message: `python make_book.py --help`
-7. Use `--proxy` option to specify proxy server for internet access. Enter a string such as `http://127.0.0.1:7890`.
-8. Use `--resume` option to manually resume the process after an interruption.
-9. epub is made of html files. By default, we only translate contents in `<p>`.
+- Use `--proxy` option to specify proxy server for internet access. Enter a string such as `http://127.0.0.1:7890`.
+- Use `--resume` option to manually resume the process after an interruption.
+- epub is made of html files. By default, we only translate contents in `<p>`.
    Use `--translate-tags` to specify tags need for translation. Use comma to seperate multiple tags. For example:
    `--translate-tags h1,h2,h3,p,div`
-10. If you want to change api_base like using Cloudflare Workers, use `--api_base <URL>` to support it.  
+- Use `--book_from` option to specify e-reader type (Now only `kobo` is available), and use `--device_path` to specify the mounting point.
+- If you want to change api_base like using Cloudflare Workers, use `--api_base <URL>` to support it.
    **Note: the api url should be '`https://xxxx/v1`'. Quotation marks are required.**
-11. Once the translation is complete, a bilingual book named `${book_name}_bilingual.epub` would be generated.
-12. If there are any errors or you wish to interrupt the translation by pressing `CTRL+C`. A book named `${book_name}_bilingual_temp.epub` would be generated. You can simply rename it to any desired name.
-13. If you want to translate strings in an e-book that aren't labeled with any tags, you can use the `--allow_navigable_strings` parameter. This will add the strings to the translation queue. **Note that it's best to look for e-books that are more standardized if possible.**
+- Once the translation is complete, a bilingual book named `${book_name}_bilingual.epub` would be generated.
+- If there are any errors or you wish to interrupt the translation by pressing `CTRL+C`. A book named `${book_name}_bilingual_temp.epub` would be generated. You can simply rename it to any desired name.
+- If you want to translate strings in an e-book that aren't labeled with any tags, you can use the `--allow_navigable_strings` parameter. This will add the strings to the translation queue. **Note that it's best to look for e-books that are more standardized if possible.**
+- To tweak the prompt, use the `--prompt` parameter. Valid placeholders for the `user` role template include `{text}` and `{language}`. It supports a few ways to configure the prompt:
+   If you don't need to set the `system` role content, you can simply set it up like this: `--prompt "Translate {text} to {language}."` or `--prompt prompt_template_sample.txt` (example of a text file can be found at [./prompt_template_sample.txt](./prompt_template_sample.txt)).
+   If you need to set the `system` role content, you can use the following format: `--prompt '{"user":"Translate {text} to {language}", "system": "You are a professional translator."}'` or `--prompt prompt_template_sample.json` (example of a JSON file can be found at [./prompt_template_sample.json](./prompt_template_sample.json)).
+   You can also set the `user` and `system` role prompt by setting environment variables: `BBM_CHATGPTAPI_USER_MSG_TEMPLATE` and `BBM_CHATGPTAPI_SYS_MSG`.
+- Use the `--batch_size` parameter to specify the number of lines for batch translation (default is 10, currently only effective for txt files).
+- `--accumulated_num` Wait for how many tokens have been accumulated before starting the translation. gpt3.5 limits the total_token to 4090. For example, if you use --accumulated_num 1600, maybe openai will
+output 2200 tokens and maybe 200 tokens for other messages in the system messages user messages, 1600+2200+200=4000, So you are close to reaching the limit. You have to choose your own
+value, there is no way to know if the limit is reached before sending
+- `--translation_style` example: `--translation_style "color: #808080; font-style: italic;"`
+- `--retranslate` `--retranslate "$translated_filepath" "file_name_in_epub" "start_str" "end_str"(optional)`<br>
+Retranslate from start_str to end_str's tag:
+`python3 "make_book.py" --book_name "test_books/animal_farm.epub" --retranslate 'test_books/animal_farm_bilingual.epub' 'index_split_002.html' 'in spite of the present book shortage which' 'This kind of thing is not a good symptom. Obviously'`<br>
+Retranslate start_str's tag:
+`python3 "make_book.py" --book_name "test_books/animal_farm.epub" --retranslate 'test_books/animal_farm_bilingual.epub' 'index_split_002.html' 'in spite of the present book shortage which'`
+- - Add model chatgptaccount, use `--chatgptaccount`, `--chatgptpassword` to pass in ChatGPT PLUS account password for translation, no need to pass key.
+### Examples
 
-### Eamples
+**Note if use `pip install bbook_maker` all commands can change to `bbook args`**
 
 ```shell
 # Test quickly
@@ -53,11 +67,41 @@ export OPENAI_API_KEY=${your_api_key}
 # Use the GPT-3 model with Japanese
 python3 make_book.py --book_name test_books/animal_farm.epub --model gpt3 --language ja
 
+# Use the DeepL model with Japanese
+python3 make_book.py --book_name test_books/animal_farm.epub --model deepl --deepl_token ${deepl_token}--language ja
+
+
 # Translate contents in <div> and <p>
 python3 make_book.py --book_name test_books/animal_farm.epub --translate-tags div,p
 
+# Tweaking the prompt
+python3 make_book.py --book_name test_books/animal_farm.epub --prompt prompt_template_sample.txt
+# or
+python3 make_book.py --book_name test_books/animal_farm.epub --prompt prompt_template_sample.json
+# or
+python3 make_book.py --book_name test_books/animal_farm.epub --prompt "Please translate \`{text}\` to {language}"
+
+# Translate books download from Rakuten Kobo on kobo e-reader
+python3 make_book.py --book_from kobo --device_path /tmp/kobo
+
 # translate txt file
-python3 make_book.py --book_name test_books/the_little_prince.txt -openai_key ${openai_key} --test --language zh-hans
+python3 make_book.py --book_name test_books/the_little_prince.txt --test --language zh-hans
+# aggregated translation txt file
+python3 make_book.py --book_name test_books/the_little_prince.txt --test --batch_size 20
+
+# Using Caiyun model to translate
+# (the api currently only support: simplified chinese <-> english, simplified chinese <-> japanese)
+# the official Caiyun has provided a test token (3975l6lr5pcbvidl6jl2)
+# you can apply your own token by following this tutorial(https://bobtranslate.com/service/translate/caiyun.html)
+python3 make_book.py --model caiyun --openai_key 3975l6lr5pcbvidl6jl2 --book_name test_books/animal_farm.epub
+
+#chatgptaccount model translate
+python3 make_book.py --book_name test_books/animal_farm.epub --model chatgptaccount --chatgptaccount=xx--chatgptpassword xx
+
+
+# Set env BBM_CAIYUN_API_KEY to ignore option --openai_key
+export BBM_CAIYUN_API_KEY=${your_api_key}
+
 ```
 
 More understandable example
@@ -66,6 +110,14 @@ python3 make_book.py --book_name 'animal_farm.epub' --openai_key sk-XXXXX --api_
 
 # Or python3 is not in your PATH
 python make_book.py --book_name 'animal_farm.epub' --openai_key sk-XXXXX --api_base 'https://xxxxx/v1'
+```
+
+Microsoft Azure Endpoints
+```shell
+python3 make_book.py --book_name 'animal_farm.epub' --openai_key XXXXX --api_base 'https://example-endpoint.openai.azure.com' --deployment_id 'deployment-name'
+
+# Or python3 is not in your PATH
+python make_book.py --book_name 'animal_farm.epub' --openai_key XXXXX --api_base 'https://example-endpoint.openai.azure.com' --deployment_id 'deployment-name'
 ```
 
 ## Docker
@@ -107,7 +159,6 @@ docker run --rm --name bilingual_book_maker --mount type=bind,source=/home/user/
 
 1. API token from free trial has limit. If you want to speed up the process, consider paying for the service or use multiple OpenAI tokens
 2. PR is welcome
-3. The DeepL model will be updated later.
 
 # Thanks
 

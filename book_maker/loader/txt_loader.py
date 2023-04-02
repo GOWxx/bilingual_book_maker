@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
 
+from book_maker.utils import prompt_config_to_kwargs
+
 from .base_loader import BaseBookLoader
 
 
@@ -12,26 +14,35 @@ class TXTBookLoader(BaseBookLoader):
         key,
         resume,
         language,
-        translate_tags,
-        allow_navigable_strings,
         model_api_base=None,
         is_test=False,
         test_num=5,
-    ):
+        prompt_config=None,
+        chatgptaccount=None,
+        chatgptpassword=None,
+    ) -> None:
         self.txt_name = txt_name
-        self.translate_model = model(key, language, model_api_base)
+        self.translate_model = model(
+            key,
+            language,
+            api_base=model_api_base,
+            chatgptaccount=chatgptaccount,
+            chatgptpassword=chatgptpassword,
+            **prompt_config_to_kwargs(prompt_config),
+        )
         self.is_test = is_test
         self.p_to_save = []
         self.bilingual_result = []
         self.bilingual_temp_result = []
         self.test_num = test_num
+        self.batch_size = 10
 
         try:
-            with open(f"{txt_name}", "r", encoding="utf-8") as f:
+            with open(f"{txt_name}", encoding="utf-8") as f:
                 self.origin_book = f.read().split("\n")
 
-        except Exception:
-            raise Exception("can not load file")
+        except Exception as e:
+            raise Exception("can not load file") from e
 
         self.resume = resume
         self.bin_path = f"{Path(txt_name).parent}/.{Path(txt_name).stem}.temp.bin"
@@ -50,17 +61,24 @@ class TXTBookLoader(BaseBookLoader):
         p_to_save_len = len(self.p_to_save)
 
         try:
-            for i in self.origin_book:
-                if self._is_special_text(i):
+            sliced_list = [
+                self.origin_book[i : i + self.batch_size]
+                for i in range(0, len(self.origin_book), self.batch_size)
+            ]
+            for i in sliced_list:
+                batch_text = "".join(i)
+                if self._is_special_text(batch_text):
                     continue
-                if self.resume and index < p_to_save_len:
-                    pass
-                else:
-                    temp = self.translate_model.translate(i)
+                if not self.resume or index >= p_to_save_len:
+                    try:
+                        temp = self.translate_model.translate(batch_text)
+                    except Exception as e:
+                        print(e)
+                        raise Exception("Something is wrong when translate") from e
                     self.p_to_save.append(temp)
-                    self.bilingual_result.append(i)
+                    self.bilingual_result.append(batch_text)
                     self.bilingual_result.append(temp)
-                index += 1
+                index += self.batch_size
                 if self.is_test and index > self.test_num:
                     break
 
@@ -78,8 +96,14 @@ class TXTBookLoader(BaseBookLoader):
 
     def _save_temp_book(self):
         index = 0
-        for i in range(0, len(self.origin_book)):
-            self.bilingual_temp_result.append(self.origin_book[i])
+        sliced_list = [
+            self.origin_book[i : i + self.batch_size]
+            for i in range(0, len(self.origin_book), self.batch_size)
+        ]
+
+        for i in range(len(sliced_list)):
+            batch_text = "".join(sliced_list[i])
+            self.bilingual_temp_result.append(batch_text)
             if self._is_special_text(self.origin_book[i]):
                 continue
             if index < len(self.p_to_save):
@@ -100,10 +124,10 @@ class TXTBookLoader(BaseBookLoader):
 
     def load_state(self):
         try:
-            with open(self.bin_path, "r", encoding="utf-8") as f:
+            with open(self.bin_path, encoding="utf-8") as f:
                 self.p_to_save = f.read().split("\n")
-        except Exception:
-            raise Exception("can not load resume file")
+        except Exception as e:
+            raise Exception("can not load resume file") from e
 
     def save_file(self, book_path, content):
         try:
